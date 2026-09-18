@@ -1,37 +1,28 @@
-FROM python:3.10-alpine
+FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY . .
-
-# ffmpeg package includes both ffmpeg and ffprobe. Install the build tools
-# required by the Python dependencies and Bento4 as well.
-RUN apk add --no-cache \
-    gcc \
-    libffi-dev \
-    musl-dev \
+# Install runtime/build dependencies. Debian's ffmpeg package provides both
+# /usr/bin/ffmpeg and /usr/bin/ffprobe, which are required by the bot.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     aria2 \
-    make \
+    gcc \
     g++ \
+    make \
     cmake \
     wget \
-    unzip
+    unzip \
+    libffi-dev \
+    && command -v ffmpeg \
+    && command -v ffprobe \
+    && ffprobe -version \
+    && rm -rf /var/lib/apt/lists/*
 
-# Fail the image build early if ffprobe is not available on PATH.
-RUN command -v ffprobe && ffprobe -version
-
-RUN wget -q https://github.com/axiomatic-systems/Bento4/archive/v1.6.0-639.zip && \
-    unzip v1.6.0-639.zip && \
-    cd Bento4-1.6.0-639 && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    cp mp4decrypt /usr/local/bin/ && \
-    cd ../.. && \
-    rm -rf Bento4-1.6.0-639 v1.6.0-639.zip
-
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY . .
+
+# Heroku worker process
 CMD ["python3", "main.py"]
