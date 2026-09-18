@@ -100,8 +100,8 @@ async def progress_bar(current, total, reply, start):
             try:
                 uploadeing_text = (
                     f"📦 Upload Status \n\n"
-                    f"📁 Upload Root\n"
-                    f"├── 🐼 WELCOME:🚀𝗨𝗣𝗟𝗢𝗔𝗗𝗜𝗡𝗚🚀\n"
+                    f"📁 Upload File\n"
+                    f"├── 🚀𝗨𝗣𝗟𝗢𝗔𝗗𝗜𝗡𝗚🚀\n"
                     f"│   ├── 📊 Progress Bar: {progress_bar}\n"
                     f"│   ├── ⚡ Speed: {sp}\n"
                     f"│   ├── 🧭 Progress: {perc}\n"
