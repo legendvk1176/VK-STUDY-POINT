@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import mmap
 from PyPDF2 import PdfReader, PdfWriter
@@ -25,6 +26,9 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 from base64 import b64decode
 from pyrogram.enums import ParseMode
+
+FFPROBE_BIN = shutil.which("ffprobe") or "/usr/bin/ffprobe"
+FFMPEG_BIN = shutil.which("ffmpeg") or "/usr/bin/ffmpeg"
 
 # Same AES Key aur IV jo encryption ke liye use kiya tha
 KEY = b'^#^#&@*HDU@&@*()'
@@ -66,13 +70,30 @@ def decrypt_file_txt(input_file):
 
     return output_file  # Decrypted file ka naam return karega
 
+
 def duration(filename):
-    result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-                             "format=duration", "-of",
-                             "default=noprint_wrappers=1:nokey=1", filename],
+    ffprobe_path = shutil.which("ffprobe") or "/usr/bin/ffprobe"
+    if not os.path.exists(ffprobe_path):
+        raise FileNotFoundError(
+            "ffprobe not found. Install FFmpeg on the server (Heroku/Docker) first."
+        )
+
+    result = subprocess.run(
+        [
+            ffprobe_path,
+            "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            filename,
+        ],
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
-    return float(result.stdout)
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "ffprobe failed for the provided file.")
+    return float(result.stdout.strip())
+
 
 def get_mps_and_keys(api_url):
     response = requests.get(api_url)
@@ -80,6 +101,7 @@ def get_mps_and_keys(api_url):
     mpd = response_json.get('MPD')
     keys = response_json.get('KEYS')
     return mpd, keys
+
 
 def exec(cmd):
         process = subprocess.run(cmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -122,6 +144,7 @@ async def pdf_download(url, file_name, chunk_size=1024 * 10):
                 fd.write(chunk)
     return file_name
 
+
 def parse_vid_info(info):
     info = info.strip()
     info = info.split("\n")
@@ -163,7 +186,7 @@ def vid_info(info):
                     # new_info.append((i[2], i[0]))
                     #  mp4,mkv etc ==== f"({i[1]})"
 
-                    new_info.update({f'{i[2]}':f'{i[0]}'})
+                    new_info.update({f'{i[2]}':f'{i[0]}'} )
 
             except:
                 pass
@@ -205,7 +228,7 @@ async def decrypt_and_merge_video(mpd_url, keys_string, output_path, output_name
         if not video_decrypted or not audio_decrypted:
             raise FileNotFoundError("Decryption failed: video or audio file not found.")
 
-        cmd4 = f'ffmpeg -i "{output_path}/video.mp4" -i "{output_path}/audio.m4a" -c copy "{output_path}/{output_name}.mp4"'
+        cmd4 = f'{FFMPEG_BIN} -i "{output_path}/video.mp4" -i "{output_path}/audio.m4a" -c copy "{output_path}/{output_name}.mp4"'
         print(f"Running command: {cmd4}")
         os.system(cmd4)
         if (output_path / "video.mp4").exists():
@@ -218,7 +241,7 @@ async def decrypt_and_merge_video(mpd_url, keys_string, output_path, output_name
         if not filename.exists():
             raise FileNotFoundError("Merged video file not found.")
 
-        cmd5 = f'ffmpeg -i "{filename}" 2>&1 | grep "Duration"'
+        cmd5 = f'{FFMPEG_BIN} -i "{filename}" 2>&1 | grep "Duration"'
         duration_info = os.popen(cmd5).read()
         print(f"Duration info: {duration_info}")
 
@@ -243,7 +266,6 @@ async def run(cmd):
         return f'[stdout]\n{stdout.decode()}'
     if stderr:
         return f'[stderr]\n{stderr.decode()}'
-
 
 
 
@@ -310,6 +332,7 @@ async def send_doc(bot: Client, m: Message,cc,ka,cc1,prog,count,name):
     time.sleep(1)
     os.remove(ka)
     time.sleep(2)
+
 
 def decrypt_file(file_path, key):
     if not os.path.exists(file_path):
@@ -378,7 +401,7 @@ async def download_and_decrypt_pdf(url, name, key):
 async def send_vid(bot: Client, m: Message,cc,filename,thumb,name,prog):
 
     # emoji = get_next_emoji()
-    subprocess.run(f'ffmpeg -i "{filename}" -ss 00:00:02 -vframes 1 "{filename}.jpg"', shell=True)
+    subprocess.run(f'{FFMPEG_BIN} -i "{filename}" -ss 00:00:02 -vframes 1 "{filename}.jpg"', shell=True)
     await prog.delete (True)
     reply = await m.reply_text(f"**Uploading ...** - `{name}`")
     try:
