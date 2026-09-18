@@ -1,13 +1,11 @@
 FROM python:3.10-alpine
 
-
-# Set the working directory
 WORKDIR /app
 
-# Copy all files from the current directory to the container's /app directory
 COPY . .
 
-# Install necessary dependencies
+# ffmpeg package includes both ffmpeg and ffprobe. Install the build tools
+# required by the Python dependencies and Bento4 as well.
 RUN apk add --no-cache \
     gcc \
     libffi-dev \
@@ -16,11 +14,12 @@ RUN apk add --no-cache \
     aria2 \
     make \
     g++ \
-    cmake
+    cmake \
+    wget \
+    unzip
 
-
-
-
+# Fail the image build early if ffprobe is not available on PATH.
+RUN command -v ffprobe && ffprobe -version
 
 RUN wget -q https://github.com/axiomatic-systems/Bento4/archive/v1.6.0-639.zip && \
     unzip v1.6.0-639.zip && \
@@ -29,12 +28,10 @@ RUN wget -q https://github.com/axiomatic-systems/Bento4/archive/v1.6.0-639.zip &
     cd build && \
     cmake .. && \
     make -j$(nproc) && \
-    cp mp4decrypt /usr/local/bin/ &&\
+    cp mp4decrypt /usr/local/bin/ && \
     cd ../.. && \
     rm -rf Bento4-1.6.0-639 v1.6.0-639.zip
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-
-CMD ["sh", "-c", "python3 main.py"]
-
+CMD ["python3", "main.py"]
