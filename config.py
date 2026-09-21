@@ -1,7 +1,7 @@
 import os
 
-api_id =  21595709
-api_hash  = '6b683b86a90c6fae0fbe50a6494bdd53'
-bot_token =  '8919674457:AAHibFE_lI-ypmj4PMiWSrekJgS_4s6F28k'
-LOG =  -1002661514525
-
+# Legacy compatibility module. Runtime credentials must be configured in Heroku Config Vars.
+api_id = int(os.environ.get("API_ID") or 0)
+api_hash = os.environ.get("API_HASH", "")
+bot_token = os.environ.get("BOT_TOKEN", "")
+LOG = int(os.environ.get("LOG", "0"))
