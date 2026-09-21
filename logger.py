@@ -1,17 +1,13 @@
 import logging
-from logging.handlers import RotatingFileHandler
+import sys
 
 logging.basicConfig(
-    level=logging.ERROR,
-    format=
-    "%(asctime)s - %(levelname)s - %(message)s [%(filename)s:%(lineno)d]",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s [%(filename)s:%(lineno)d]",
     datefmt="%d-%b-%y %H:%M:%S",
-    handlers=[
-        RotatingFileHandler("Assist.txt", maxBytes=50000000, backupCount=10),
-        logging.StreamHandler(),
-    ],
+    handlers=[logging.StreamHandler(sys.stdout)],
+    force=True,
 )
+
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
-
-
-logging = logging.getLogger()
+logging = logging.getLogger("vk-study-point")
